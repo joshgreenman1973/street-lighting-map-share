@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Where crime and darkness overlap | Vital City</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --vc-black: #050507;
+      --vc-chartreuse: #dde44c;
+      --vc-charcoal: #707175;
+      --vc-magenta: #e7466d;
+      --font-primary: 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--vc-black); overflow: hidden; }
+    #password-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--vc-black);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-primary);
+    }
+    #map-frame {
+      display: none; width: 100%; height: 100%; border: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="password-gate">
+  <div style="text-align: center; max-width: 360px; padding: 32px;">
+    <div style="color: var(--vc-chartreuse); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 16px;">Street Lighting &amp; Crime</div>
+    <h1 style="color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 8px; font-family: var(--font-primary);">This page is password-protected</h1>
+    <p style="color: var(--vc-charcoal); font-size: 14px; margin-bottom: 24px; font-family: var(--font-primary);">Enter the password to view the interactive map.</p>
+    <form id="pw-form" style="display: flex; gap: 8px;">
+      <input id="pw-input" type="password" placeholder="Password" autocomplete="off" style="
+        flex: 1; padding: 10px 14px; font-size: 15px; border: 1px solid #333; border-radius: 4px;
+        background: #111; color: #fff; outline: none; font-family: var(--font-primary);
+      ">
+      <button type="submit" style="
+        padding: 10px 20px; font-size: 14px; font-weight: 600; border: none; border-radius: 4px;
+        background: var(--vc-chartreuse); color: var(--vc-black); cursor: pointer; font-family: var(--font-primary);
+      ">Enter</button>
+    </form>
+    <p id="pw-error" style="color: var(--vc-magenta); font-size: 13px; margin-top: 12px; display: none; font-family: var(--font-primary);">Incorrect password. Please try again.</p>
+  </div>
+</div>
+
+<iframe id="map-frame" src="map.html"></iframe>
+
+<script>
+(function() {
+  var gate = document.getElementById('password-gate');
+  var frame = document.getElementById('map-frame');
+  var form = document.getElementById('pw-form');
+  var input = document.getElementById('pw-input');
+  var error = document.getElementById('pw-error');
+
+  if (sessionStorage.getItem('vc-map-auth') === 'true') {
+    gate.style.display = 'none';
+    frame.style.display = 'block';
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (input.value === 'vitalcity2026!') {
+      gate.style.display = 'none';
+      frame.style.display = 'block';
+      sessionStorage.setItem('vc-map-auth', 'true');
+    } else {
+      error.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

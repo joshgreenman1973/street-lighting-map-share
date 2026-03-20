@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Where crime and darkness overlap | Vital City</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" />
+
+  <style>
+    :root {
+      --vc-black: #050507;
+      --vc-white: #ffffff;
+      --vc-cloud: #dddddd;
+      --vc-chartreuse: #dde44c;
+      --vc-orange: #ff7c53;
+      --vc-charcoal: #707175;
+      --vc-magenta: #e7466d;
+      --vc-periwinkle: #9b9fbc;
+      --vc-cerulean: #217ebe;
+      --vc-indigo: #394882;
+
+      --font-primary: 'Helvetica Neue', Arial, sans-serif;
+      --font-secondary: Georgia, 'Times New Roman', serif;
+
+      --sidebar-w: 360px;
+      --sd: #0c0c0f;
+      --sm: #18181c;
+      --sl: rgba(255,255,255,0.08);
+      --st: rgba(255,255,255,0.88);
+      --sd2: rgba(255,255,255,0.45);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0; padding: 0; width: 100vw; height: 100vh;
+      background: var(--vc-black); color: var(--vc-white);
+      font-family: var(--font-primary); -webkit-font-smoothing: antialiased;
+      overflow: hidden; display: flex; flex-direction: row;
+    }
+
+    /* ═══ SIDEBAR ═══ */
+    .vc-sidebar {
+      width: var(--sidebar-w); height: 100vh; flex-shrink: 0;
+      background: var(--sd); border-right: 1px solid var(--sl);
+      z-index: 40; display: flex; flex-direction: column;
+      box-shadow: 2px 0 16px rgba(0,0,0,0.4);
+    }
+
+    .sidebar-header {
+      padding: 20px 20px 14px; border-bottom: 1px solid var(--sl);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sidebar-header-title {
+      font-size: 10px; font-weight: 900; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--vc-chartreuse);
+    }
+    .sidebar-reset {
+      background: none; border: 1px solid rgba(255,255,255,0.12);
+      color: var(--sd2); font-family: var(--font-primary);
+      font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 4px 10px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sidebar-reset:hover { color: var(--vc-orange); border-color: var(--vc-orange); }
+
+    /* ── Geocoder ── */
+    .geocoder-wrap { padding: 14px 20px 0; }
+    .mapboxgl-ctrl-geocoder { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: 1px solid var(--sl) !important; border-radius: 0 !important; font-family: var(--font-primary) !important; background: var(--sm) !important; color: var(--st) !important; }
+    .mapboxgl-ctrl-geocoder--input { font-family: var(--font-primary) !important; font-size: 12.5px !important; color: var(--vc-white) !important; background: transparent !important; }
+    .mapboxgl-ctrl-geocoder--input::placeholder { color: var(--sd2) !important; }
+    .mapboxgl-ctrl-geocoder--icon-search, .mapboxgl-ctrl-geocoder--icon-close { fill: var(--sd2) !important; }
+    .mapboxgl-ctrl-geocoder--button { background: transparent !important; }
+    .mapboxgl-ctrl-geocoder .suggestions { background: var(--sd) !important; border: 1px solid var(--sl) !important; border-radius: 0 !important; }
+    .mapboxgl-ctrl-geocoder .suggestions > li > a { color: var(--st) !important; font-size: 12px !important; }
+    .mapboxgl-ctrl-geocoder .suggestions > .active > a, .mapboxgl-ctrl-geocoder .suggestions > li > a:hover { background: var(--sm) !important; color: var(--vc-white) !important; }
+
+    /* ── Presets ── */
+    .presets { display: flex; gap: 6px; padding: 10px 20px 6px; }
+    .preset-btn {
+      flex: 1; padding: 7px 6px; background: var(--sm);
+      border: 1px solid var(--sl); text-align: center;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.02em;
+      cursor: pointer; transition: all 0.15s;
+      color: var(--sd2); text-transform: uppercase;
+    }
+    .preset-btn:hover { background: rgba(221,228,76,0.08); color: var(--vc-chartreuse); border-color: rgba(221,228,76,0.25); }
+    .preset-btn.active { background: rgba(221,228,76,0.12); color: var(--vc-chartreuse); border-color: rgba(221,228,76,0.35); }
+
+    /* ── Live Stats ── */
+    .live-stats {
+      padding: 10px 20px; border-bottom: 1px solid var(--sl);
+      display: flex; gap: 10px; align-items: stretch;
+    }
+    .stat-chip {
+      display: flex; flex-direction: column; flex: 1;
+      background: var(--sm); padding: 8px 10px; border-left: 3px solid var(--vc-magenta);
+    }
+    .stat-chip.light { border-left-color: var(--vc-chartreuse); }
+    .stat-chip-val { font-size: 18px; font-weight: 900; line-height: 1.1; color: var(--vc-white); }
+    .stat-chip-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sd2); margin-top: 2px; }
+
+    /* ── Menu ── */
+    .menu { flex: 1; overflow-y: auto; padding: 4px 20px 24px; font-size: 13px; color: var(--st); }
+    .menu::-webkit-scrollbar { width: 4px; }
+    .menu::-webkit-scrollbar-track { background: transparent; }
+    .menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+
+    .group { border-bottom: 1px solid var(--sl); padding: 12px 0; }
+    .group:first-of-type { padding-top: 4px; }
+    .group:last-of-type { border-bottom: none; }
+    .group-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; padding: 4px 6px; margin: -4px -6px; border-radius: 2px; transition: background 0.12s; }
+    .group-header:hover { background: rgba(255,255,255,0.04); }
+    .group-header-left { display: flex; flex-direction: column; }
+    .group-header-left .group-title { display: flex; align-items: center; margin: 0; font-weight: 800; font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--st); }
+    .group-header-left .group-desc { font-size: 11px; color: var(--sd2); margin-top: 2px; text-transform: none; letter-spacing: normal; font-weight: 400; }
+    .group-arrow { color: var(--vc-orange); font-size: 13px; font-weight: 900; transition: transform 0.15s ease; flex-shrink: 0; margin-left: 8px; }
+    .group-arrow.collapsed { transform: rotate(-90deg); }
+    .group-body { margin-top: 8px; overflow: hidden; }
+    .group-body.hidden { display: none; }
+
+    label.vc-label { display: flex; align-items: center; margin: 7px 0; cursor: pointer; font-weight: 400; font-size: 13px; line-height: 1.3; color: var(--st); }
+    input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid rgba(255,255,255,0.3); margin-right: 10px; display: grid; place-content: center; cursor: pointer; background: transparent; flex-shrink: 0; transition: background 0.1s, border-color 0.1s; }
+    input[type="checkbox"]::before { content: ""; width: 8px; height: 8px; transform: scale(0); background: var(--vc-black); clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); transition: transform 0.1s; }
+    input[type="checkbox"]:checked { background: var(--vc-orange); border-color: var(--vc-orange); }
+    input[type="checkbox"]:checked::before { transform: scale(1); }
+
+    /* ── Sliders ── */
+    .slider-block { margin: 10px 0 6px; padding: 12px 14px; background: var(--sm); border-left: 3px solid var(--vc-chartreuse); }
+    .slider-block.orange { border-left-color: var(--vc-orange); }
+    .slider-block-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+    .slider-block-header b { font-weight: 800; font-size: 11px; color: var(--st); }
+    .slider-pct-input { display: flex; align-items: center; }
+    .slider-pct-input input[type="number"] { border: 1px solid rgba(255,255,255,0.15); border-radius: 0; padding: 2px 4px; font-family: var(--font-primary); font-size: 11px; font-weight: 800; color: var(--vc-white); background: rgba(255,255,255,0.06); outline: none; width: 42px; text-align: right; }
+    .slider-pct-input input[type="number"]:focus { border-color: var(--vc-orange); }
+    .slider-pct-input span { font-size: 10px; margin-left: 3px; font-weight: 800; color: var(--sd2); }
+    .slider-real { font-size: 10px; font-weight: 800; min-height: 14px; color: var(--vc-chartreuse); }
+    .slider-block.orange .slider-real { color: var(--vc-orange); }
+
+    .sparkline { display: flex; align-items: flex-end; justify-content: space-between; height: 20px; margin: 8px 0 -6px; padding: 0 2px; gap: 1px; }
+    .sparkline div { flex: 1; background: rgba(255,255,255,0.08); transition: background 0.15s; }
+    .sparkline.dir-left div.active { background: var(--vc-chartreuse); opacity: 0.7; }
+    .sparkline.dir-right div.active { background: var(--vc-orange); opacity: 0.7; }
+
+    input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; margin: 8px 0 5px; cursor: pointer; height: 3px; outline: none; border-radius: 0; position: relative; z-index: 2; background: rgba(255,255,255,0.15); }
+    input[type="range"].range-light { background: linear-gradient(to right, var(--vc-chartreuse) 0%, var(--vc-chartreuse) var(--fill, 50%), rgba(255,255,255,0.15) var(--fill, 50%), rgba(255,255,255,0.15) 100%); }
+    input[type="range"].range-crime { background: linear-gradient(to right, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.15) var(--fill, 80%), var(--vc-orange) var(--fill, 80%), var(--vc-orange) 100%); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--vc-white); border: 2px solid var(--sd); border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.25); cursor: pointer; transition: transform 0.1s; }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--vc-white); border: 2px solid var(--sd); border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.25); cursor: pointer; }
+    .slider-labels { display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: var(--sd2); font-weight: 700; }
+
+    /* ═══ MAP ═══ */
+    .map-wrapper { flex: 1; position: relative; height: 100vh; overflow: hidden; background: var(--vc-black); }
+    #map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+
+    .headline-scrim {
+      position: absolute; top: 0; left: 0; width: 100%; height: 40vh;
+      background: radial-gradient(circle at top left, rgba(5,5,7,0.88) 0%, rgba(5,5,7,0.45) 35%, transparent 75%);
+      z-index: 2; pointer-events: none;
+    }
+
+    .map-headline {
+      position: absolute; top: 28px; left: 28px; z-index: 30;
+      max-width: 500px; pointer-events: none; display: flex; align-items: flex-start; gap: 12px;
+    }
+    .map-headline-text { flex: 1; }
+    .map-headline h1 {
+      margin: 0; font-size: 30px; font-weight: 900; line-height: 1.14;
+      letter-spacing: -0.015em; color: var(--vc-white);
+      text-shadow: 0 2px 16px rgba(0,0,0,0.9);
+    }
+    .map-headline h1 span {
+      background: linear-gradient(transparent 60%, var(--vc-chartreuse) 60%);
+      background-size: 100% 1.05em; background-repeat: no-repeat;
+      background-position: 0 0.88em; padding-bottom: 2px;
+    }
+    .map-headline .dek {
+      display: block; margin-top: 10px; font-family: var(--font-secondary);
+      font-size: 14.5px; color: rgba(255,255,255,0.82); line-height: 1.55;
+      text-shadow: 0 1px 10px rgba(0,0,0,0.9);
+    }
+    .info-btn {
+      pointer-events: auto; width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
+      color: var(--vc-white); font-weight: 800; font-family: var(--font-secondary); font-style: italic;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; backdrop-filter: blur(4px); margin-top: 4px; flex-shrink: 0;
+    }
+    .info-btn:hover { background: var(--vc-chartreuse); color: var(--vc-black); border-color: var(--vc-chartreuse); }
+
+    /* ═══ LEGEND ═══ */
+    .legend {
+      position: absolute; bottom: 24px; right: 24px;
+      background: rgba(12,12,15,0.92); backdrop-filter: blur(8px);
+      padding: 16px 18px; border: 1px solid rgba(255,255,255,0.1);
+      border-top: 3px solid var(--vc-chartreuse);
+      font-size: 12px; min-width: 220px; z-index: 20;
+      max-height: calc(100vh - 80px); overflow-y: auto; color: rgba(255,255,255,0.85);
+    }
+    .legend strong { font-weight: 900; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vc-chartreuse); }
+    .legend hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0 8px; }
+    .legend-section-title { font-weight: 800; font-size: 10.5px; margin-bottom: 5px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.03em; }
+    .legend-item { display: flex; align-items: center; margin: 5px 0; font-size: 11.5px; }
+    .legend-swatch { display: inline-block; width: 12px; height: 12px; margin-right: 9px; border: 1px solid rgba(255,255,255,0.12); flex-shrink: 0; }
+    .legend-swatch.circle { border-radius: 50%; }
+    .legend-gradient { height: 8px; width: 100%; margin: 4px 0 2px; border: 1px solid rgba(255,255,255,0.08); }
+    .legend-gradient-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--sd2); font-weight: 600; }
+
+    /* ═══ SOURCE ═══ */
+    .vc-source {
+      position: absolute; bottom: 24px; left: 24px;
+      background: rgba(12,12,15,0.9); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px;
+      font-size: 10.5px; color: var(--sd2); z-index: 20;
+    }
+    .vc-source .vc-tag { font-weight: 900; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--vc-chartreuse); }
+    .vc-source .vc-pipe { margin: 0 6px; color: rgba(255,255,255,0.15); }
+    .vc-source a { color: var(--vc-white); text-decoration: underline; text-decoration-color: var(--vc-chartreuse); text-decoration-thickness: 1.5px; text-underline-offset: 2px; font-weight: 800; }
+
+    /* ═══ MODAL ═══ */
+    .modal-overlay {
+      position: absolute; inset: 0; background: rgba(5,5,7,0.88); backdrop-filter: blur(6px);
+      z-index: 100; display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal-content {
+      background: var(--vc-black); border: 1px solid var(--sl); border-top: 4px solid var(--vc-chartreuse);
+      width: 90%; max-width: 520px; padding: 32px 32px 28px; position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7); transform: translateY(20px); transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; background: none; border: none;
+      color: var(--sd2); font-size: 24px; cursor: pointer; transition: color 0.2s;
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { color: var(--vc-orange); }
+    .modal-content h2 { margin: 0 0 18px; font-size: 20px; font-weight: 900; letter-spacing: -0.01em; }
+    .modal-content p { font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8); margin-bottom: 14px; }
+    .modal-content p:last-of-type { margin-bottom: 0; }
+    .modal-content a { color: var(--vc-chartreuse); text-decoration: underline; text-underline-offset: 2px; }
+    .modal-content a:hover { color: var(--vc-white); }
+    .modal-detail { font-size: 12px; color: var(--sd2); border-top: 1px solid var(--sl); padding-top: 14px; margin-top: 18px; line-height: 1.6; }
+    .modal-detail b { color: var(--st); font-weight: 700; }
+
+    /* ═══ POPUPS ═══ */
+    .mapboxgl-popup-content {
+      font-family: var(--font-primary) !important; border-radius: 0 !important;
+      background: rgba(12,12,15,0.96) !important; color: rgba(255,255,255,0.88) !important;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.5) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      border-top: 3px solid var(--vc-chartreuse) !important;
+      padding: 14px 16px !important; min-width: 230px;
+    }
+    .mapboxgl-popup-tip { display: none; }
+    .tt-header { font-weight: 900; font-size: 9px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 10px; letter-spacing: 0.05em; }
+    .tt-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+    .tt-label { color: rgba(255,255,255,0.5); font-size: 11px; }
+    .tt-val { font-weight: 800; font-size: 12.5px; }
+    .tt-rank { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 5px; margin-left: 6px; display: inline-block; }
+    .tt-bar-bg { width: 100%; height: 4px; background: rgba(255,255,255,0.08); margin-bottom: 10px; overflow: hidden; border-radius: 2px; }
+    .tt-bar-fg { height: 100%; border-radius: 2px; }
+    .tt-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 8px 0; }
+
+    /* ═══ SHARE ═══ */
+    .share-btn {
+      position: absolute; top: 28px; right: 28px; z-index: 30;
+      background: rgba(12,12,15,0.85); backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.15); color: var(--st);
+      font-family: var(--font-primary); font-size: 10px; font-weight: 800;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 8px 14px; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .share-btn:hover { background: var(--vc-chartreuse); color: var(--vc-black); border-color: var(--vc-chartreuse); }
+    .share-btn.copied { background: var(--vc-chartreuse); color: var(--vc-black); border-color: var(--vc-chartreuse); }
+
+    /* ═══ SIDEBAR TABS ═══ */
+    .sidebar-tabs {
+      display: flex; flex-shrink: 0; gap: 6px; padding: 8px 12px;
+      background: var(--sm);
+    }
+    .sidebar-tab {
+      flex: 1; padding: 10px 0; background: rgba(255,255,255,0.04); border: 1px solid var(--sl); border-radius: 6px;
+      color: var(--sd2); font-family: var(--font-primary); font-size: 11px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.18s; text-align: center;
+    }
+    .sidebar-tab:hover { color: var(--st); background: rgba(255,255,255,0.08); }
+    .sidebar-tab.active { color: var(--vc-black); background: var(--vc-chartreuse); border-color: var(--vc-chartreuse); }
+    .sidebar-tab[data-tab="tab-explore"]:not(.active) {
+      border-color: var(--vc-orange); color: var(--vc-orange);
+      animation: exploreHint 2s ease-in-out 3;
+    }
+    .sidebar-tab[data-tab="tab-explore"]:not(.active).hint-done { animation: none; border-color: var(--sl); color: var(--sd2); }
+    @keyframes exploreHint {
+      0%, 100% { border-color: var(--vc-orange); box-shadow: 0 0 0 0 rgba(255,124,83,0); }
+      50% { border-color: var(--vc-orange); box-shadow: 0 0 8px 2px rgba(255,124,83,0.35); }
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ═══ EXPLORE TAB ═══ */
+    .explore-header {
+      padding: 14px 20px 10px; border-bottom: 1px solid var(--sl);
+    }
+    .tour-start-btn {
+      width: 100%; padding: 10px; background: linear-gradient(135deg, var(--vc-magenta), var(--vc-orange));
+      border: none; color: var(--vc-white); font-family: var(--font-primary);
+      font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .tour-start-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(231,70,109,0.35); }
+    .tour-start-btn:active { transform: translateY(0); }
+    .tour-start-btn:disabled { opacity: 0.5; cursor: default; transform: none; filter: none; box-shadow: none; }
+    .explore-desc {
+      font-size: 10px; color: var(--sd2); margin-top: 8px; font-weight: 600;
+    }
+    .explore-empty {
+      padding: 40px 20px; text-align: center; color: var(--sd2); font-size: 12px; line-height: 1.6;
+    }
+    .explore-empty b { color: var(--st); display: block; margin-bottom: 6px; font-size: 13px; }
+    .hotspot-list {
+      flex: 1; overflow-y: auto; padding: 0;
+    }
+    .hotspot-list::-webkit-scrollbar { width: 4px; }
+    .hotspot-list::-webkit-scrollbar-track { background: transparent; }
+    .hotspot-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+    .hotspot-row {
+      display: flex; align-items: center; padding: 10px 20px; gap: 12px;
+      border-bottom: 1px solid var(--sl); cursor: pointer; transition: background 0.12s;
+    }
+    .hotspot-row:hover { background: rgba(255,255,255,0.04); }
+    .hotspot-row.tour-active { background: rgba(231,70,109,0.12); border-left: 3px solid var(--vc-magenta); }
+    .hotspot-rank {
+      width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: var(--vc-black); flex-shrink: 0;
+    }
+    .hotspot-rank.top5 { background: var(--vc-magenta); }
+    .hotspot-rank.top10 { background: var(--vc-orange); }
+    .hotspot-rank.rest { background: var(--vc-periwinkle); }
+    .hotspot-info { flex: 1; min-width: 0; }
+    .hotspot-info-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+    .hotspot-info-label { font-size: 11px; font-weight: 800; color: var(--st); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hotspot-info-score { font-size: 10px; font-weight: 800; color: var(--vc-magenta); flex-shrink: 0; margin-left: 8px; }
+    .hotspot-bars { display: flex; gap: 4px; }
+    .hotspot-bar-wrap { flex: 1; height: 4px; background: rgba(255,255,255,0.06); overflow: hidden; }
+    .hotspot-bar { height: 100%; }
+    .hotspot-meta { display: flex; justify-content: space-between; margin-top: 3px; }
+    .hotspot-meta span { font-size: 9px; color: var(--sd2); font-weight: 600; }
+
+    /* ═══ TOUR ═══ */
+    .tour-overlay {
+      position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+      z-index: 50; pointer-events: auto;
+      animation: tourSlideUp 0.3s ease;
+    }
+    @keyframes tourSlideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    .tour-card {
+      background: rgba(12,12,15,0.96); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.12); border-top: 3px solid var(--vc-magenta);
+      padding: 18px 22px 14px; min-width: 340px; max-width: 420px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+    .tour-step {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--vc-magenta); margin-bottom: 6px;
+    }
+    .tour-title {
+      font-size: 18px; font-weight: 900; color: var(--vc-white); line-height: 1.2; margin-bottom: 8px;
+    }
+    .tour-stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+      padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 12px;
+    }
+    .tour-stat { display: flex; flex-direction: column; }
+    .tour-stat-val { font-size: 16px; font-weight: 900; line-height: 1.2; }
+    .tour-stat-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--sd2); }
+    .tour-nav { display: flex; gap: 8px; }
+    .tour-btn {
+      flex: 1; padding: 8px; background: var(--sm); border: 1px solid var(--sl);
+      color: var(--st); font-family: var(--font-primary); font-size: 10px;
+      font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .tour-btn:hover { background: rgba(255,255,255,0.08); color: var(--vc-white); }
+    .tour-btn:disabled { opacity: 0.3; cursor: default; }
+    .tour-btn-stop { border-color: rgba(231,70,109,0.3); color: var(--vc-magenta); }
+    .tour-btn-stop:hover { background: rgba(231,70,109,0.12); border-color: var(--vc-magenta); }
+    .tour-progress {
+      display: flex; gap: 4px; justify-content: center; margin-top: 10px;
+    }
+    .tour-dot {
+      width: 6px; height: 6px; background: rgba(255,255,255,0.15); transition: all 0.2s;
+    }
+    .tour-dot.active { background: var(--vc-magenta); width: 18px; }
+    .tour-dot.visited { background: var(--vc-periwinkle); }
+
+    /* ═══ MOBILE ═══ */
+    .mobile-toggle { display: none; }
+    @media (max-width: 820px) {
+      body { flex-direction: column; }
+      .map-wrapper { position: absolute; inset: 0; width: 100vw; height: 100vh; }
+      .headline-scrim { height: 60vh; }
+      .map-headline { top: 14px; left: 14px; right: 60px; max-width: none; }
+      .map-headline h1 { font-size: 22px; }
+      .map-headline .dek { font-size: 13px; margin-top: 6px; }
+      .share-btn { top: 14px; right: 14px; padding: 6px 10px; font-size: 9px; }
+      .vc-sidebar {
+        position: absolute; top: auto; bottom: 0; left: 0; right: 0;
+        width: 100%; height: 40vh; border-right: none;
+        border-top: 1px solid var(--sl);
+        border-top-left-radius: 12px; border-top-right-radius: 12px;
+        transition: height 0.3s ease; z-index: 40;
+      }
+      .mobile-toggle {
+        display: flex; width: 100%; background: var(--sd); color: var(--vc-white);
+        justify-content: center; padding: 14px; font-size: 10px; font-weight: 900;
+        letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+        border: none; border-top-left-radius: 12px; border-top-right-radius: 12px;
+        border-bottom: 1px solid var(--sl); position: relative;
+      }
+      .mobile-toggle::before {
+        content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+        width: 32px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;
+      }
+      .sidebar-header { display: none; }
+      .tour-overlay { bottom: 45vh; left: 50%; min-width: 280px; }
+      .tour-card { min-width: 280px; padding: 14px 16px 10px; }
+      .vc-source { bottom: auto; top: 10px; left: 10px; right: auto; padding: 5px 8px; font-size: 9px; }
+      .legend { bottom: 14px; right: 14px; padding: 12px 14px; min-width: 180px; font-size: 11px; }
+    }
+    @media (max-width: 480px) {
+      .legend { display: none !important; }
+      .live-stats { gap: 8px; padding: 8px 16px; }
+      .stat-chip { padding: 6px 8px; }
+      .stat-chip-val { font-size: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="vc-sidebar" id="sidebar">
+    <button class="mobile-toggle" id="mobileToggle">Filters &amp; Controls &#x25B4;</button>
+
+    <div class="sidebar-header">
+      <span class="sidebar-header-title">Data Controls</span>
+      <button class="sidebar-reset" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="geocoder-wrap" id="geocoder-container"></div>
+    <div class="presets">
+      <div class="preset-btn" id="preset-dark">Dark &amp; Dangerous</div>
+      <div class="preset-btn" id="preset-bright">Bright &amp; High Crime</div>
+    </div>
+
+    <div class="live-stats">
+      <div class="stat-chip">
+        <span class="stat-chip-val" id="statCells">&mdash;</span>
+        <span class="stat-chip-label">Cells Flagged</span>
+      </div>
+      <div class="stat-chip light">
+        <span class="stat-chip-val" id="statPct">&mdash;</span>
+        <span class="stat-chip-label">of All Cells</span>
+      </div>
+    </div>
+
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" data-tab="tab-controls">&#9881; Controls</button>
+      <button class="sidebar-tab" data-tab="tab-explore">&#9733; Explore Hotspots</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-controls">
+    <div class="menu">
+      <div class="group" id="group-grid">
+        <div class="group-header" data-target="groupGrid-body">
+          <div class="group-header-left">
+            <label class="vc-label group-title" style="margin:0"><input type="checkbox" id="groupGrid" checked> Crime &amp; Lighting</label>
+            <div class="group-desc">Map views and threshold percentiles.</div>
+          </div>
+          <span class="group-arrow">&#x25BE;</span>
+        </div>
+        <div class="group-body" id="groupGrid-body">
+          <label class="vc-label"><input type="checkbox" id="gridOverlay" checked> Overlap Analysis</label>
+          <label class="vc-label"><input type="checkbox" id="gridTotal"> Total Crime Count</label>
+          <label class="vc-label"><input type="checkbox" id="gridLighting"> Average Lighting (nw/cm&sup2;sr)</label>
+
+          <div class="slider-block">
+            <div class="slider-block-header"><b>Lighting percentile &le;</b><div class="slider-pct-input"><input type="number" id="overlayThresholdInputBox" value="50" min="0" max="100" step="1"><span>%</span></div></div>
+            <div class="sparkline dir-left" id="spark-light"></div>
+            <input type="range" class="range-light" id="overlayThreshold" min="0" max="100" step="1" value="50">
+            <div class="slider-labels"><span>Brightest</span><span class="slider-real" id="overlayRealValue" style="margin:0;background:transparent"></span><span>Darkest</span></div>
+          </div>
+
+          <div class="slider-block orange">
+            <div class="slider-block-header"><b>Crime percentile &ge;</b><div class="slider-pct-input"><input type="number" id="crimeThresholdInputBox" value="80" min="0" max="100" step="1"><span>%</span></div></div>
+            <div class="sparkline dir-right" id="spark-crime"></div>
+            <input type="range" class="range-crime" id="crimeThreshold" min="0" max="100" step="1" value="80">
+            <div class="slider-labels"><span>Lowest</span><span class="slider-real" id="crimeRealValue" style="margin:0;background:transparent"></span><span>Highest</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group" id="group-nta"><div class="group-header" data-target="groupNTA-body"><div class="group-header-left"><label class="vc-label group-title" style="margin:0"><input type="checkbox" id="groupNTA" checked> NTA Boundaries</label></div><span class="group-arrow collapsed">&#x25BE;</span></div><div class="group-body hidden" id="groupNTA-body"><label class="vc-label"><input type="checkbox" id="ntaBoundary" checked> NTA Boundary</label></div></div>
+      <div class="group" id="group-police"><div class="group-header" data-target="groupPolice-body"><div class="group-header-left"><label class="vc-label group-title" style="margin:0"><input type="checkbox" id="groupPolice"> Police Precincts</label></div><span class="group-arrow collapsed">&#x25BE;</span></div><div class="group-body hidden" id="groupPolice-body"><label class="vc-label"><input type="checkbox" id="policeBoundary"> Police Precinct Boundary</label></div></div>
+      <div class="group" id="group-crime"><div class="group-header" data-target="groupCrime-body"><div class="group-header-left"><label class="vc-label group-title" style="margin:0"><input type="checkbox" id="groupCrime"> Crime Points</label></div><span class="group-arrow collapsed">&#x25BE;</span></div><div class="group-body hidden" id="groupCrime-body"><label class="vc-label"><input type="checkbox" id="crimeC1"> Misdemeanor Assault</label><label class="vc-label"><input type="checkbox" id="crimeC2"> Robbery</label><label class="vc-label"><input type="checkbox" id="crimeC3"> Felony Assault</label><label class="vc-label"><input type="checkbox" id="crimeC4"> Homicide</label><label class="vc-label"><input type="checkbox" id="crimeC5"> Rape</label></div></div>
+      <div class="group" id="group-other"><div class="group-header" data-target="groupOther-body"><div class="group-header-left"><label class="vc-label group-title" style="margin:0"><input type="checkbox" id="groupOther"> Reference Sites</label></div><span class="group-arrow collapsed">&#x25BE;</span></div><div class="group-body hidden" id="groupOther-body"><label class="vc-label"><input type="checkbox" id="BID"> Business Improvement Districts</label><label class="vc-label"><input type="checkbox" id="CVS"> Cure Violence Sites</label><label class="vc-label"><input type="checkbox" id="Landuse"> Land Use Parcels</label><label class="vc-label"><input type="checkbox" id="Scaffolding"> Scaffolding Sites</label></div></div>
+    </div>
+    </div><!-- end tab-controls -->
+
+    <div class="tab-panel" id="tab-explore">
+      <div class="explore-header">
+        <button class="tour-start-btn" id="startTourBtn">&#9654; Fly Through the Worst Hotspots</button>
+        <div class="explore-desc">Top flagged cells ranked by combined severity</div>
+      </div>
+      <div id="hotspotList" class="hotspot-list">
+        <div class="explore-empty"><b>Adjust filters first</b>Flagged cells will appear here, ranked by how dark and crime-heavy they are.</div>
+      </div>
+    </div><!-- end tab-explore -->
+
+  </div>
+
+  <div class="map-wrapper" id="mapWrapper">
+    <div id="map"></div>
+    <div class="headline-scrim"></div>
+
+    <div class="map-headline">
+      <div class="map-headline-text">
+        <h1><span>Where crime and darkness overlap</span></h1>
+        <span class="dek">Grid cells flagged when crime is above the selected percentile and nighttime lighting is below the selected percentile.</span>
+      </div>
+      <button class="info-btn" id="infoBtn">i</button>
+    </div>
+
+    <button class="share-btn" id="shareBtn">&#x1F517; Share View</button>
+
+    <div class="tour-overlay" id="tourOverlay" style="display:none">
+      <div class="tour-card">
+        <div class="tour-step" id="tourStep">Stop 1 of 5</div>
+        <div class="tour-title" id="tourTitle"></div>
+        <div class="tour-stats" id="tourStats"></div>
+        <div class="tour-nav">
+          <button class="tour-btn" id="tourPrev">&larr; Prev</button>
+          <button class="tour-btn" id="tourNext">Next &rarr;</button>
+          <button class="tour-btn tour-btn-stop" id="tourStop">End Tour</button>
+        </div>
+        <div class="tour-progress" id="tourProgress"></div>
+      </div>
+    </div>
+
+    <div class="vc-source"><span class="vc-tag">Vital City</span><span class="vc-pipe">|</span><b>Source:</b> <a href="https://www.nyc.gov/site/nypd/stats/crime-statistics/crime-statistics-landing.page" target="_blank" rel="noopener">NYPD</a> &amp; Nighttime lighting raster</div>
+    <div id="legend" class="legend"></div>
+  </div>
+
+  <div class="modal-overlay" id="infoModal">
+    <div class="modal-content">
+      <button class="modal-close" id="closeModal">&times;</button>
+      <h2>About This Tool</h2>
+      <p>This interactive map identifies areas where high crime density coincides with inadequate street lighting across New York City. Each grid cell covers a standardized area; the two slider thresholds let you define what counts as &ldquo;high crime&rdquo; and &ldquo;low lighting.&rdquo;</p>
+      <p><b>Crime data</b> is derived from <a href="https://www.nyc.gov/site/nypd/stats/crime-statistics/crime-statistics-landing.page" target="_blank" rel="noopener">NYPD publicly available incident reports</a>, aggregated into grid cells. Percentiles indicate how a cell compares to all other cells across the five boroughs.</p>
+      <p><b>Lighting data</b> is sourced from high-resolution nighttime satellite rasters (measured in nanowatts per centimeter squared per steradian), capturing ambient illumination at the street level.</p>
+      <div class="modal-detail">
+        <b>How to use:</b> Adjust the lighting and crime sliders to narrow or widen the overlap. Lower the lighting percentile to focus on darker areas; raise the crime percentile to focus on higher-crime zones. Use the presets for common views, or type a specific address in the search bar.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+
+      /* ── Tab switching ── */
+      var exploreBtn = document.querySelector('.sidebar-tab[data-tab="tab-explore"]');
+      if (exploreBtn) {
+        exploreBtn.addEventListener('animationend', function () {
+          exploreBtn.classList.add('hint-done');
+        });
+      }
+      document.querySelectorAll('.sidebar-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          document.querySelectorAll('.sidebar-tab').forEach(function (t) { t.classList.remove('active'); });
+          document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+          tab.classList.add('active');
+          if (exploreBtn) exploreBtn.classList.add('hint-done');
+          var panel = $(tab.getAttribute('data-tab'));
+          if (panel) panel.classList.add('active');
+        });
+      });
+
+      /* ── Mobile toggle ── */
+      $('mobileToggle').addEventListener('click', function () {
+        var d = $('sidebar');
+        var isExpanded = d.style.height === '88vh';
+        d.style.height = isExpanded ? '' : '88vh';
+        this.textContent = isExpanded ? 'Filters & Controls \u25B4' : 'Close \u25BE';
+      });
+
+      /* ── Modal ── */
+      var modal = $('infoModal');
+      $('infoBtn').addEventListener('click', function () { modal.classList.add('active'); });
+      $('closeModal').addEventListener('click', function () { modal.classList.remove('active'); });
+      modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('active'); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') modal.classList.remove('active'); });
+
+      /* ── Sparklines (driven by actual quantile data) ── */
+      var lightingQ = [1.66,3.28,4.27,5.79,7.4,8.49,9.7,10.96,12.69,14.15,15.38,16.69,17.8,18.76,19.96,21.24,22.42,23.49,24.81,25.97,27.0,27.64,28.54,29.34,30.06,30.71,31.43,32.24,33.04,33.64,34.22,35.07,35.82,36.51,37.17,37.97,38.59,39.19,39.97,40.67,41.19,41.88,42.55,43.35,44.11,44.84,45.75,46.34,47.14,48.01,48.84,49.79,50.47,51.45,52.29,53.56,54.68,55.71,56.9,58.1,59.46,60.44,61.42,62.66,63.86,65.0,66.23,67.6,69.14,70.42,71.61,73.23,74.61,76.16,77.42,78.65,80.36,82.04,83.94,86.0,87.81,89.74,91.91,94.05,97.23,100.28,102.84,105.63,108.85,111.4,114.92,118.83,122.41,127.3,133.63,143.44,155.7,173.73,207.31,283.61,931.25];
+      var crimeQ = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,4,4,4,5,5,5,6,6,6,7,7,8,8,9,9,10,10,11,11,12,13,13,14,15,16,17,18,20,21,23,24,27,29,31,34,37,40,44,47,53,59,65.68,76,91.84,114,530];
+
+      var buildSparkline = function (id, data) {
+        var el = $(id);
+        var n = 50;
+        var diffs = [];
+        for (var i = 0; i < n; i++) {
+          var idx = Math.round((i / n) * 100);
+          var idxNext = Math.min(Math.round(((i + 1) / n) * 100), data.length - 1);
+          diffs.push(data[idxNext] - data[Math.min(idx, data.length - 1)]);
+        }
+        var maxDiff = Math.max.apply(null, diffs.slice(0, n - 1));
+        for (var i = 0; i < n; i++) {
+          var bar = document.createElement('div');
+          bar.style.height = Math.max(4, Math.min(100, (diffs[i] / maxDiff) * 100)) + '%';
+          el.appendChild(bar);
+        }
+      };
+      buildSparkline('spark-light', lightingQ);
+      buildSparkline('spark-crime', crimeQ);
+
+      var colorSparkline = function (id, pct, dir) {
+        var bars = $(id).children;
+        var idx = Math.floor((pct / 100) * 50);
+        for (var i = 0; i < 50; i++) {
+          bars[i].className = dir === 'left' ? (i <= idx ? 'active' : '') : (i >= idx ? 'active' : '');
+        }
+      };
+
+      /* ── Mapbox ── */
+      mapboxgl.accessToken = 'pk.eyJ1IjoieHIyMDA2IiwiYSI6ImNtaTdkdHpyMjA1eTEya3EwbjVkeHh0OHcifQ.63Tlvydk2jod3GrgjFyAKw';
+
+      var hashParams = new URLSearchParams(window.location.hash.slice(1));
+      var initLight = Number(hashParams.get('l')) || 50;
+      var initCrime = Number(hashParams.get('c')) || 80;
+      var initLng = Number(hashParams.get('lng')) || -73.96;
+      var initLat = Number(hashParams.get('lat')) || 40.68;
+      var initZoom = Number(hashParams.get('z')) || 10.5;
+
+      var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/xr2006/cmhwoanp7002m01rzcttqh1jw?fresh=true',
+        center: [initLng, initLat],
+        zoom: initZoom
+      });
+
+      var geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken, mapboxgl: mapboxgl,
+        placeholder: 'Search an address\u2026', marker: { color: '#e7466d' },
+        bbox: [-74.26, 40.49, -73.70, 40.92]
+      });
+      $('geocoder-container').appendChild(geocoder.onAdd(map));
+
+      map.on('load', function () {
+        var LAYERS = {
+          gridTotal: 'Grid-Total_Crime', gridLighting: 'Grid-Avg_Lighting', gridOverlay: 'Grid-Overlap_Analysis_v2',
+          nta: 'NTA--Boundary', police: 'Police Precinct--Boundary', bid: 'Business Improvement Districts',
+          cvs: 'Cure Violence Site', landuse: 'Land Use', scaffolding: 'Scaffholding',
+          crimeC1: 'Crime Points--C1', crimeC2: 'Crime Points--C2', crimeC3: 'Crime Points--C3', crimeC4: 'Crime Points--C4', crimeC5: 'Crime Points--C5'
+        };
+
+        var setVis = function (id, v) { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v ? 'visible' : 'none'); };
+        var isVis = function (id) { return map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none'; };
+
+        /* Accordions */
+        document.querySelectorAll('.group-header').forEach(function (hdr) {
+          hdr.addEventListener('click', function (e) {
+            if (e.target.tagName.toLowerCase() === 'input') return;
+            var body = $(hdr.getAttribute('data-target'));
+            if (body) body.classList.toggle('hidden');
+            var arrow = hdr.querySelector('.group-arrow');
+            if (arrow) arrow.classList.toggle('collapsed');
+          });
+        });
+
+        /* Wire layer groups */
+        var wireGroup = function (gid, children) {
+          var gcb = $(gid);
+          if (!gcb) return;
+          gcb.addEventListener('change', function () {
+            children.forEach(function (c) {
+              var el = $(c.cb);
+              if (el) el.checked = gcb.checked;
+              setVis(c.layer, gcb.checked);
+            });
+            updateLegend();
+          });
+          children.forEach(function (c) {
+            var el = $(c.cb);
+            if (!el) return;
+            el.addEventListener('change', function () {
+              setVis(c.layer, el.checked);
+              gcb.checked = children.some(function (x) { var e = $(x.cb); return e && e.checked; });
+              updateLegend();
+            });
+          });
+        };
+
+        wireGroup('groupGrid', [{ cb: 'gridTotal', layer: LAYERS.gridTotal }, { cb: 'gridLighting', layer: LAYERS.gridLighting }, { cb: 'gridOverlay', layer: LAYERS.gridOverlay }]);
+        wireGroup('groupNTA', [{ cb: 'ntaBoundary', layer: LAYERS.nta }]);
+        wireGroup('groupPolice', [{ cb: 'policeBoundary', layer: LAYERS.police }]);
+        wireGroup('groupOther', [{ cb: 'BID', layer: LAYERS.bid }, { cb: 'CVS', layer: LAYERS.cvs }, { cb: 'Landuse', layer: LAYERS.landuse }, { cb: 'Scaffolding', layer: LAYERS.scaffolding }]);
+        wireGroup('groupCrime', [{ cb: 'crimeC1', layer: LAYERS.crimeC1 }, { cb: 'crimeC2', layer: LAYERS.crimeC2 }, { cb: 'crimeC3', layer: LAYERS.crimeC3 }, { cb: 'crimeC4', layer: LAYERS.crimeC4 }, { cb: 'crimeC5', layer: LAYERS.crimeC5 }]);
+
+        /* Sliders */
+        var qLookup = function (arr, pct) { return arr[Math.round(Math.max(0, Math.min(100, Number(pct))))] || null; };
+        var oSlider = $('overlayThreshold'), oInput = $('overlayThresholdInputBox'), oReal = $('overlayRealValue');
+        var cSlider = $('crimeThreshold'), cInput = $('crimeThresholdInputBox'), cReal = $('crimeRealValue');
+
+        oSlider.value = initLight; oInput.value = initLight;
+        cSlider.value = initCrime; cInput.value = initCrime;
+
+        var rankLabel = function (pct, type) {
+          if (type === 'crime') {
+            if (pct >= 95) return { text: 'Top 5%', color: '#d2232a' };
+            if (pct >= 90) return { text: 'Top 10%', color: '#ff7c53' };
+            if (pct >= 75) return { text: 'Top 25%', color: '#f69577' };
+            if (pct >= 50) return { text: 'Above median', color: '#fabcaa' };
+            return { text: 'Below median', color: '#9b9fbc' };
+          }
+          if (pct <= 10) return { text: 'Very dark', color: '#394882' };
+          if (pct <= 25) return { text: 'Dark', color: '#4e98cb' };
+          if (pct <= 50) return { text: 'Below median', color: '#9b9fbc' };
+          return { text: 'Well lit', color: '#dde44c' };
+        };
+
+        /* Live cell count */
+        var totalGridCells = 0;
+        var countOverlayCells = function () {
+          if (!map.getLayer(LAYERS.gridOverlay)) return;
+          try {
+            var layer = map.getLayer(LAYERS.gridOverlay);
+            var feats = map.querySourceFeatures(layer.source, { sourceLayer: layer['source-layer'] });
+            var lPct = Number(oSlider.value), cPct = Number(cSlider.value);
+            var allIds = {}, matchIds = {}, allCount = 0, matchCount = 0;
+            feats.forEach(function (f) {
+              var key = f.id != null ? f.id : JSON.stringify((f.geometry.coordinates || [[]])[0][0]);
+              if (!allIds[key]) { allIds[key] = true; allCount++; }
+              var p = f.properties || {};
+              if ((p.avg_lighting_percentile || 0) <= lPct && (p.total_crime_percentile || 0) >= cPct) {
+                if (!matchIds[key]) { matchIds[key] = true; matchCount++; }
+              }
+            });
+            if (allCount > 0) totalGridCells = allCount;
+            $('statCells').textContent = matchCount.toLocaleString();
+            $('statPct').textContent = totalGridCells > 0 ? (matchCount / totalGridCells * 100).toFixed(1) + '%' : '\u2014';
+          } catch (e) { /* source features may not be ready */ }
+        };
+
+        var updateHash = function () {
+          var c = map.getCenter();
+          var params = new URLSearchParams();
+          params.set('l', oSlider.value);
+          params.set('c', cSlider.value);
+          params.set('lng', c.lng.toFixed(4));
+          params.set('lat', c.lat.toFixed(4));
+          params.set('z', map.getZoom().toFixed(2));
+          history.replaceState(null, '', '#' + params.toString());
+        };
+
+        var applyFilter = function () {
+          var lPct = Number(oSlider.value), cPct = Number(cSlider.value);
+          oInput.value = lPct; cInput.value = cPct;
+
+          oSlider.style.setProperty('--fill', lPct + '%');
+          cSlider.style.setProperty('--fill', cPct + '%');
+
+          var lReal = qLookup(lightingQ, lPct);
+          oReal.innerHTML = lReal !== null ? '\u2264 ' + Number(lReal).toFixed(1) + ' nw' : '';
+          var cReal2 = qLookup(crimeQ, cPct);
+          cReal.innerHTML = cReal2 !== null ? '\u2265 ' + cReal2 : '';
+
+          colorSparkline('spark-light', lPct, 'left');
+          colorSparkline('spark-crime', cPct, 'right');
+
+          if (map.getLayer(LAYERS.gridOverlay)) {
+            map.setFilter(LAYERS.gridOverlay, ['all',
+              ['<=', ['get', 'avg_lighting_percentile'], lPct],
+              ['>=', ['get', 'total_crime_percentile'], cPct]
+            ]);
+          }
+
+          document.querySelectorAll('.preset-btn').forEach(function (b) { b.classList.remove('active'); });
+          if (lPct === 50 && cPct === 90) $('preset-dark').classList.add('active');
+          if (lPct === 100 && cPct === 95) $('preset-bright').classList.add('active');
+
+          updateHash();
+          requestAnimationFrame(function () { setTimeout(countOverlayCells, 200); });
+          if (typeof scheduleHotspotBuild === 'function') scheduleHotspotBuild();
+        };
+
+        var clampSet = function (slider, val) {
+          slider.value = Math.max(Number(slider.min), Math.min(Number(slider.max), Number(val)));
+          applyFilter();
+        };
+
+        oSlider.addEventListener('input', function () { clampSet(oSlider, oSlider.value); });
+        oInput.addEventListener('change', function () { clampSet(oSlider, oInput.value); });
+        cSlider.addEventListener('input', function () { clampSet(cSlider, cSlider.value); });
+        cInput.addEventListener('change', function () { clampSet(cSlider, cInput.value); });
+
+        $('preset-dark').addEventListener('click', function () { clampSet(oSlider, 50); clampSet(cSlider, 90); });
+        $('preset-bright').addEventListener('click', function () { clampSet(oSlider, 100); clampSet(cSlider, 95); });
+
+        $('resetBtn').addEventListener('click', function () {
+          clampSet(oSlider, 50);
+          clampSet(cSlider, 80);
+          map.flyTo({ center: [-73.96, 40.68], zoom: 10.5, duration: 1000 });
+        });
+
+        applyFilter();
+        setVis(LAYERS.gridOverlay, true); setVis(LAYERS.nta, true);
+        [LAYERS.gridLighting, LAYERS.gridTotal, LAYERS.police, LAYERS.bid, LAYERS.cvs, LAYERS.landuse, LAYERS.scaffolding, LAYERS.crimeC1, LAYERS.crimeC2, LAYERS.crimeC3, LAYERS.crimeC4, LAYERS.crimeC5].forEach(function (id) { setVis(id, false); });
+
+        map.on('moveend', updateHash);
+        map.on('idle', countOverlayCells);
+
+        /* Share */
+        $('shareBtn').addEventListener('click', function () {
+          updateHash();
+          navigator.clipboard.writeText(window.location.href).then(function () {
+            var btn = $('shareBtn');
+            btn.classList.add('copied');
+            btn.textContent = '\u2713 Copied';
+            setTimeout(function () { btn.classList.remove('copied'); btn.textContent = '\uD83D\uDD17 Share View'; }, 2000);
+          });
+        });
+
+        /* Tooltips */
+        var hoverPriority = [LAYERS.gridTotal, LAYERS.gridLighting, LAYERS.gridOverlay, LAYERS.nta, LAYERS.police];
+        var popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
+        var topHoverLayer = function () { return hoverPriority.find(isVis) || null; };
+
+        var tooltipHTML = function (layerId, f) {
+          var p = f.properties || {};
+          if (layerId === LAYERS.gridTotal || layerId === LAYERS.gridLighting || layerId === LAYERS.gridOverlay) {
+            var cPct = p.total_crime_percentile || 0, lPct = p.avg_lighting_percentile || 0;
+            var tc = p.total_crime != null ? p.total_crime : 0;
+            var al = p.avg_lighting ? Number(p.avg_lighting).toFixed(1) : '0';
+            var cr = rankLabel(cPct, 'crime');
+            var lr = rankLabel(lPct, 'light');
+            var hdr = layerId === LAYERS.gridOverlay ? 'Overlap Cell' : 'Grid Cell';
+            return '<div>' +
+              '<div class="tt-header">' + hdr + '</div>' +
+              '<div class="tt-row"><span class="tt-label">Total crime</span>' +
+              '<span><span class="tt-val">' + tc + '</span><span class="tt-rank" style="background:' + cr.color + '22;color:' + cr.color + '">' + cr.text + '</span></span></div>' +
+              '<div class="tt-bar-bg"><div class="tt-bar-fg" style="width:' + cPct + '%;background:' + (cPct > 80 ? '#ff7c53' : '#e7466d') + '"></div></div>' +
+              '<div class="tt-row"><span class="tt-label">Avg lighting</span>' +
+              '<span><span class="tt-val">' + al + '</span><span class="tt-rank" style="background:' + lr.color + '22;color:' + lr.color + '">' + lr.text + '</span></span></div>' +
+              '<div class="tt-bar-bg"><div class="tt-bar-fg" style="width:' + lPct + '%;background:#dde44c"></div></div>' +
+              '<hr class="tt-divider">' +
+              '<div class="tt-row"><span class="tt-label">Crime pctl</span><span class="tt-val" style="font-size:11px">' + Math.round(cPct) + 'th</span></div>' +
+              '<div class="tt-row"><span class="tt-label">Light pctl</span><span class="tt-val" style="font-size:11px">' + Math.round(lPct) + 'th</span></div>' +
+              '</div>';
+          }
+          return '<div class="tt-header">Boundary</div><div style="font-weight:800;font-size:14px">' + (p.Name || p.name || 'Area') + '</div>';
+        };
+
+        var isTouchDevice = function () { return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); };
+
+        hoverPriority.forEach(function (lid) {
+          if (!map.getLayer(lid)) return;
+          if (!isTouchDevice()) {
+            map.on('mouseenter', lid, function () { if (topHoverLayer() === lid) map.getCanvas().style.cursor = 'pointer'; });
+            map.on('mouseleave', lid, function () { map.getCanvas().style.cursor = ''; popup.remove(); });
+            map.on('mousemove', lid, function (e) {
+              if (topHoverLayer() !== lid || !e.features.length) return;
+              popup.setLngLat(e.lngLat).setHTML(tooltipHTML(lid, e.features[0])).addTo(map);
+            });
+          } else {
+            map.on('click', lid, function (e) {
+              if (topHoverLayer() !== lid || !e.features.length) return;
+              popup.setLngLat(e.lngLat).setHTML(tooltipHTML(lid, e.features[0])).addTo(map);
+            });
+          }
+        });
+
+        if (isTouchDevice()) {
+          map.on('click', function (e) {
+            var features = map.queryRenderedFeatures(e.point, { layers: hoverPriority.filter(isVis) });
+            if (!features.length) popup.remove();
+          });
+        }
+
+        /* Legend */
+        var updateLegend = function () {
+          var el = $('legend');
+          var h = '<strong>Legend</strong>', has = false;
+
+          if (isVis(LAYERS.gridTotal)) {
+            has = true;
+            h += '<hr><div class="legend-section-title">Crime Density</div>';
+            h += '<div class="legend-gradient" style="background:linear-gradient(to right,#f7f8dd,#bdd451,#ff7c53,#d2232a)"></div>';
+            h += '<div class="legend-gradient-labels"><span>Lowest</span><span>Highest</span></div>';
+          }
+          if (isVis(LAYERS.gridLighting)) {
+            has = true;
+            h += '<hr><div class="legend-section-title">Nighttime Lighting</div>';
+            h += '<div class="legend-gradient" style="background:linear-gradient(to right,#050507,#394882,#9b9fbc,#ffffff)"></div>';
+            h += '<div class="legend-gradient-labels"><span>Darkest</span><span>Brightest</span></div>';
+          }
+          if (isVis(LAYERS.gridOverlay)) {
+            has = true;
+            h += '<hr><div class="legend-item"><span class="legend-swatch circle" style="background:#e7466d;border-color:#e7466d"></span>High crime + low lighting</div>';
+          }
+
+          var bVis = [{ id: LAYERS.nta, label: 'NTA Boundary' }, { id: LAYERS.police, label: 'Police Precinct' }].filter(function (b) { return isVis(b.id); });
+          if (bVis.length) {
+            has = true;
+            h += '<hr><div class="legend-section-title">Boundaries</div>';
+            bVis.forEach(function (b) { h += '<div class="legend-item"><span class="legend-swatch" style="background:transparent;border:1.5px solid rgba(255,255,255,0.6)"></span>' + b.label + '</div>'; });
+          }
+          el.innerHTML = h;
+          el.style.display = has ? 'block' : 'none';
+        };
+        updateLegend();
+
+        /* ═══ HOTSPOT EXPLORER ═══ */
+        var hotspots = [];
+        var buildHotspotList = function () {
+          if (!map.getLayer(LAYERS.gridOverlay)) return;
+          if (map.getLayoutProperty(LAYERS.gridOverlay, 'visibility') === 'none') return;
+          try {
+            /* Use queryRenderedFeatures — returns only features passing the active Mapbox filter */
+            var feats = map.queryRenderedFeatures({ layers: [LAYERS.gridOverlay] });
+            var seen = {};
+            var matches = [];
+            feats.forEach(function (f) {
+              var key = f.id != null ? String(f.id) : (f.properties.Shape_ID || JSON.stringify(f.geometry.coordinates));
+              if (seen[key]) return;
+              seen[key] = true;
+              var p = f.properties || {};
+              var fLight = p.avg_lighting_percentile || 0;
+              var fCrime = p.total_crime_percentile || 0;
+              var severity = fCrime + (100 - fLight);
+              var geom = f.geometry || {};
+              var lng, lat;
+              if (geom.type === 'Point' && geom.coordinates) {
+                lng = geom.coordinates[0]; lat = geom.coordinates[1];
+              } else if (geom.type === 'Polygon' && geom.coordinates && geom.coordinates[0]) {
+                var ring = geom.coordinates[0], cx = 0, cy = 0;
+                ring.forEach(function (pt) { cx += pt[0]; cy += pt[1]; });
+                lng = cx / ring.length; lat = cy / ring.length;
+              } else { return; }
+              matches.push({
+                severity: severity,
+                crime: p.total_crime || 0,
+                crimePct: fCrime,
+                light: p.avg_lighting ? Number(p.avg_lighting).toFixed(1) : '0',
+                lightPct: fLight,
+                borough: p.BoroName || '',
+                lng: lng, lat: lat
+              });
+            });
+            matches.sort(function (a, b) { return b.severity - a.severity; });
+            hotspots = matches.slice(0, 25);
+          } catch (e) { hotspots = []; }
+
+          var list = $('hotspotList');
+          if (hotspots.length === 0) {
+            list.innerHTML = '<div class="explore-empty"><b>No hotspots found</b>Try widening the filters to flag more cells.</div>';
+            $('startTourBtn').disabled = true;
+            return;
+          }
+          $('startTourBtn').disabled = false;
+          var html = '';
+          hotspots.forEach(function (h, i) {
+            var rankClass = i < 5 ? 'top5' : i < 10 ? 'top10' : 'rest';
+            var cr = rankLabel(h.crimePct, 'crime');
+            var lr = rankLabel(h.lightPct, 'light');
+            var boroLabel = h.borough ? h.borough : '';
+            html += '<div class="hotspot-row" data-idx="' + i + '">' +
+              '<div class="hotspot-rank ' + rankClass + '">' + (i + 1) + '</div>' +
+              '<div class="hotspot-info">' +
+              '<div class="hotspot-info-top">' +
+              '<span class="hotspot-info-label">' + cr.text + ' crime &middot; ' + lr.text + (boroLabel ? ' &middot; ' + boroLabel : '') + '</span>' +
+              '<span class="hotspot-info-score">' + Math.round(h.severity) + '</span>' +
+              '</div>' +
+              '<div class="hotspot-bars">' +
+              '<div class="hotspot-bar-wrap"><div class="hotspot-bar" style="width:' + h.crimePct + '%;background:' + cr.color + '"></div></div>' +
+              '<div class="hotspot-bar-wrap"><div class="hotspot-bar" style="width:' + (100 - h.lightPct) + '%;background:#394882"></div></div>' +
+              '</div>' +
+              '<div class="hotspot-meta"><span>' + h.crime + ' crimes</span><span>' + h.light + ' nw</span></div>' +
+              '</div></div>';
+          });
+          list.innerHTML = html;
+          list.querySelectorAll('.hotspot-row').forEach(function (row) {
+            row.addEventListener('click', function () {
+              var idx = Number(row.getAttribute('data-idx'));
+              var h = hotspots[idx];
+              if (h) map.flyTo({ center: [h.lng, h.lat], zoom: 15, duration: 1200 });
+            });
+          });
+        };
+
+        /* Rebuild hotspot list when filters change or map idles */
+        var hotspotTimer = null;
+        var scheduleHotspotBuild = function () {
+          clearTimeout(hotspotTimer);
+          hotspotTimer = setTimeout(buildHotspotList, 400);
+        };
+        map.on('idle', scheduleHotspotBuild);
+
+        /* ═══ GUIDED TOUR ═══ */
+        var tourActive = false;
+        var tourIdx = 0;
+        var tourStops = [];
+        var tourMarker = null;
+
+        var startTour = function () {
+          if (hotspots.length === 0) return;
+          tourStops = hotspots.slice(0, Math.min(5, hotspots.length));
+          tourIdx = 0;
+          tourActive = true;
+          $('tourOverlay').style.display = '';
+          renderTourProgress();
+          flyToTourStop(0);
+        };
+
+        var endTour = function () {
+          tourActive = false;
+          $('tourOverlay').style.display = 'none';
+          if (tourMarker) { tourMarker.remove(); tourMarker = null; }
+          document.querySelectorAll('.hotspot-row.tour-active').forEach(function (r) { r.classList.remove('tour-active'); });
+        };
+
+        var renderTourProgress = function () {
+          var dots = '';
+          for (var i = 0; i < tourStops.length; i++) {
+            var cls = i === tourIdx ? 'active' : (i < tourIdx ? 'visited' : '');
+            dots += '<div class="tour-dot ' + cls + '"></div>';
+          }
+          $('tourProgress').innerHTML = dots;
+        };
+
+        var flyToTourStop = function (idx) {
+          tourIdx = idx;
+          var stop = tourStops[idx];
+          if (!stop) return;
+
+          $('tourStep').textContent = 'Stop ' + (idx + 1) + ' of ' + tourStops.length;
+          $('tourTitle').textContent = stop.borough ? stop.borough + ' \u2014 Hotspot #' + (idx + 1) : 'Hotspot #' + (idx + 1);
+          var cr = rankLabel(stop.crimePct, 'crime');
+          var lr = rankLabel(stop.lightPct, 'light');
+          $('tourStats').innerHTML =
+            '<div class="tour-stat"><span class="tour-stat-val" style="color:' + cr.color + '">' + stop.crime + '</span><span class="tour-stat-label">Total crimes</span></div>' +
+            '<div class="tour-stat"><span class="tour-stat-val" style="color:' + cr.color + '">' + Math.round(stop.crimePct) + 'th</span><span class="tour-stat-label">Crime percentile</span></div>' +
+            '<div class="tour-stat"><span class="tour-stat-val" style="color:#9b9fbc">' + stop.light + '</span><span class="tour-stat-label">Avg lighting (nw)</span></div>' +
+            '<div class="tour-stat"><span class="tour-stat-val" style="color:#9b9fbc">' + Math.round(stop.lightPct) + 'th</span><span class="tour-stat-label">Light percentile</span></div>';
+
+          $('tourPrev').disabled = idx === 0;
+          $('tourNext').textContent = idx === tourStops.length - 1 ? 'Finish' : 'Next \u2192';
+          renderTourProgress();
+
+          /* Highlight sidebar row */
+          document.querySelectorAll('.hotspot-row.tour-active').forEach(function (r) { r.classList.remove('tour-active'); });
+          var rows = $('hotspotList').querySelectorAll('.hotspot-row');
+          if (rows[idx]) { rows[idx].classList.add('tour-active'); rows[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+          /* Move pulsing marker */
+          if (tourMarker) tourMarker.remove();
+          var markerEl = document.createElement('div');
+          markerEl.style.cssText = 'width:20px;height:20px;background:rgba(231,70,109,0.5);border:2px solid #e7466d;border-radius:50%;box-shadow:0 0 0 0 rgba(231,70,109,0.4);animation:tourPulse 1.5s ease infinite;';
+          if (!document.getElementById('tourPulseStyle')) {
+            var style = document.createElement('style');
+            style.id = 'tourPulseStyle';
+            style.textContent = '@keyframes tourPulse{0%{box-shadow:0 0 0 0 rgba(231,70,109,0.5)}70%{box-shadow:0 0 0 14px rgba(231,70,109,0)}100%{box-shadow:0 0 0 0 rgba(231,70,109,0)}}';
+            document.head.appendChild(style);
+          }
+          tourMarker = new mapboxgl.Marker({ element: markerEl })
+            .setLngLat([stop.lng, stop.lat])
+            .addTo(map);
+
+          map.flyTo({ center: [stop.lng, stop.lat], zoom: 15, duration: 1500 });
+        };
+
+        $('startTourBtn').addEventListener('click', function () {
+          /* Switch to Explore tab if not already there */
+          document.querySelectorAll('.sidebar-tab').forEach(function (t) { t.classList.remove('active'); });
+          document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+          document.querySelector('[data-tab="tab-explore"]').classList.add('active');
+          $('tab-explore').classList.add('active');
+          startTour();
+        });
+        $('tourNext').addEventListener('click', function () {
+          if (tourIdx >= tourStops.length - 1) { endTour(); return; }
+          flyToTourStop(tourIdx + 1);
+        });
+        $('tourPrev').addEventListener('click', function () {
+          if (tourIdx > 0) flyToTourStop(tourIdx - 1);
+        });
+        $('tourStop').addEventListener('click', endTour);
+        document.addEventListener('keydown', function (e) {
+          if (!tourActive) return;
+          if (e.key === 'Escape') endTour();
+          if (e.key === 'ArrowRight' && tourIdx < tourStops.length - 1) flyToTourStop(tourIdx + 1);
+          if (e.key === 'ArrowLeft' && tourIdx > 0) flyToTourStop(tourIdx - 1);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
